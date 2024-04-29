@@ -1,0 +1,14 @@
+Web interface -- -- -- -- -- -> buisness logic
+command-line interface -/
+
+cli inside buisness logic
+
+logic:
+    word module:
+        three modes: with random words, letters or with words from custom dictionary
+
+    input module:
+        takes the word and then check if it mathces the given. Probably will give tips or statistic
+
+    output module:
+        print word, probably with some changes
