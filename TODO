@@ -12,3 +12,21 @@ logic:
 
     output module:
         print word, probably with some changes
+
+    session_manadger:
+        controls the session
+
+    session:
+        use other modules to play with player
+        returns analytic data about success and failures: precentage, mistakes e.t.c.
+
+cli:
+    will be realtime interaction with logic
+
+    change mode option, change dict, add dict or whatever
+
+    start'n'quit
+
+web:
+    flask server with cooly designed site and so on
+    interacts with logic essentially like the cli
