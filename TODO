@@ -1,8 +1,6 @@
 Web interface -- -- -- -- -- -> buisness logic
 command-line interface -/
 
-cli inside buisness logic
-
 logic:
     word module:
         three modes: with random words, letters or with words from custom dictionary
@@ -10,23 +8,29 @@ logic:
     input module:
         takes the word and then check if it mathces the given. Probably will give tips or statistic
 
-    output module:
-        print word, probably with some changes
+    output module: -- done
+        print word, probably with some changes -- depr
 
-    session_manadger:
-        controls the session
+    session_manadger: -- done
+        controls the session -- done
 
     session:
-        use other modules to play with player
+        use other modules to play with player -- done
         returns analytic data about success and failures: precentage, mistakes e.t.c.
 
 cli:
-    will be realtime interaction with logic
+    will be realtime interaction with logic -- done
 
     change mode option, change dict, add dict or whatever
 
-    start'n'quit
+    start'n'quit -- done
 
 web:
     flask server with cooly designed site and so on
     interacts with logic essentially like the cli
+
+
+1:
+    Need dict mode for cli with all it need to work properly
+    Still need web interface in first place rather than analytics
+    Whanna see a leaderboard in web interface
