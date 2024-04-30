@@ -3,10 +3,7 @@ import random
 import sys
 import time
 import requests
-import asyncio
 import json
-
-# from aioconsole import ainput
 
 import logging
 logging.getLogger('werkzeug')
@@ -52,8 +49,9 @@ def get_api(amount: int) -> list[str]:
     return result[:amount]
 
 
-def get_wordlist(amount: int, name: str) -> list[str]:
+def get_wordlist(amount: int, name: str, expand: bool = False) -> list[str]:
     result: list[str] = json.load(open('dicts.json'))[name]
+    result *= expand * amount // len(result) + 1
     random.shuffle(result)
     return result[:amount]
 
@@ -75,38 +73,36 @@ def del_dict(name: str) -> None:
     logging.debug(f'Deleted wordlist "{name}"')
 
 
-def list_dict() -> list[str]:
+def list_dict() -> list[tuple]:
     if not os.path.exists('dicts.json'):
         obj = {}
     else:
         obj = json.load(open('dicts.json', 'rt'))
-    return list(obj.keys())
+    return [(x, len(obj[x])) for x in list(obj.keys())]
 
 
-async def session(wordlist: list[str], difficulty: int = 3) -> int:  # TODO collecting analytic data
-    output('\nRepeat words:')
-    guessed_right: int = 0
-    for word in wordlist:
-        output('-- ' + word + ' --')
-        # try:
-        #     result = await asyncio.wait_for(ainput(), timeout=1 * len(word))
-        # except asyncio.TimeoutError:
-        #     result = None
-        #     print("Time's out")
+def session(wordlist: list[str], difficulty: int = 3) -> int:  # TODO collecting analytic data
+    output('\nRepeat words or type !quit to exit:')
+    typed_right: int = 0
+    for i, word in enumerate(wordlist):
+        output(word)
 
         start: float = time.time()
         result: str = get_input()
+        if result == '!quit':
+            break
         if result == word and time.time() - start <= (1.2 * (len(word) - 1) ** 0.5 + 1) * difficulty + 1:
-            guessed_right += 1
-            output('Nice!')
+            typed_right += 1
+            output(f'Nice!', end='')
         elif result == word:
-            output('Too long!')
+            output('Spend too much time!', end='')
         else:
-            output('Wrong!')
-    return round(guessed_right / len(wordlist) * 100)
+            output('Wrong!', end='')
+        output(f' {len(wordlist) - i - 1} left')
+    return round(typed_right / len(wordlist) * 100)
 
 
-async def cli() -> None:
+def cli() -> None:
     print('Welcome to retalker command-line interface!')
     while (command := input('1. [S]tart\t2. [W]ordlists\t3. [E]xit\n>>> ').lower()) not in ['exit', 'e', '3']:
         if command in ['start', 's', '1']:
@@ -126,7 +122,8 @@ async def cli() -> None:
                 print()
                 continue
 
-            while not (amount := input('Amount of words:\n>>> ').lower()).isnumeric() or int(amount) <= 0:
+            while ((not (amount := input('Amount of words [0; 100]:\n>>> ').strip()).isnumeric()) or 100 < int(amount)
+                   or int(amount) <= 0):
                 pass
             amount = int(amount)
 
@@ -138,10 +135,15 @@ async def cli() -> None:
                     if not (list_of_dicts := list_dict()):
                         print('No dicts awailable')
                         continue
-                    print('\n'.join([f'- {x}' for x in list_of_dicts]))
-                    while (file_name := input("Choose dict by typing its' name:\n>>> ")) not in list_dict():
+                    print('\n'.join([f'- {x} ({y})' for x, y in list_of_dicts]))
+                    while ((file_name := input("Choose dict by typing its' name:\n>>> ")) not in
+                           [x[0] for x in list_of_dicts]):
                         pass
-                    dictionary = get_wordlist(amount, file_name)
+                    if list_of_dicts[[x[0] for x in list_of_dicts].index(file_name)][1] < amount:
+                        dictionary = get_wordlist(amount, file_name, input('Whould you like to expand the wordlist? '
+                                                                           '[y/n]\n>>> ') in ['y', 'yes'])
+                    else:
+                        dictionary = get_wordlist(amount, file_name)
                 elif mode in ['w', 'words', '2']:
                     dictionary = get_api(amount)
                 elif mode in ['l', 'letters', '3']:
@@ -150,13 +152,18 @@ async def cli() -> None:
                     break
 
             if dictionary and difficulty:
-                a = await session(dictionary)
+                a = session(dictionary, difficulty)
                 print(f'Result: {a}%')
                 time.sleep(2)
             else:
                 print()
                 continue
         elif command in ['wordlists', 'w', '2']:
+            flag: bool = bool(list_dict())
+            if not flag:
+                print('\t--No wordlists--')
+            else:
+                print('Wordlists:\n' + '\n'.join([f'- {x} ({y})' for x, y in list_dict()]))
             while (kley := input('1. [A]dd\t2. [D]elete\t3. [B]ack\n>>> ').strip().lower()) not in ['3', 'b', 'back']:
                 if kley in ['a', 'add', '1']:
                     while not (name := input('Type name of file or "quit":\n>>> ').strip()) == 'quit':
@@ -166,10 +173,8 @@ async def cli() -> None:
                         except FileNotFoundError:
                             logging.error(f'File {name} not found')
                 elif kley in ['d', 'delete', '2']:
-                    if not list_dict():
-                        print('No wordlists')
-                        continue
-                    print('\n'.join([f'- {x}' for x in list_dict()]))
+                    if not flag:
+                        print('Cannot delete nothing')
                     while not (name := input('Type name of wordlist or "quit":\n>>> ').strip()) == 'quit':
                         if name in list_dict():
                             del_dict(name)
@@ -189,4 +194,4 @@ if not os.path.exists('fallback.json'):
         print('Failed to create a fallback file. Check logs for more info')
         sys.exit(1)
 if __name__ == '__main__':
-    asyncio.run(cli())
+    cli()
